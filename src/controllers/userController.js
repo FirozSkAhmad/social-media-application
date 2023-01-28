@@ -197,7 +197,7 @@ async function unFollowTheUser(req, res) {
         const name = userData.userName
         delete followersList[name]
         await userModel.findOneAndUpdate({ userName }, { followers: followersList })
-        return res.status(201).send({ updatedUser })
+        return res.status(200).send({ msg: "unfollowed Successfully" })
     }
     catch (err) {
         return res.status(500).send({ msg: err.message })
