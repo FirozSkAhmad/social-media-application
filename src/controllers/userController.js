@@ -90,4 +90,118 @@ async function login(req, res) {
     }
 }
 
-module.exports = { createUser, login }
+async function getUser(req, res) {
+    try {
+        const userName = req.params.username
+        if (!isValid(userName)) {
+            return res.status(400).send({ msg: "userName must be in string formate" })
+        }
+        const user = await userModel.findOne({ userName })
+        if (!user) {
+            return res.status(400).send({ msg: "user doesn't exists with the given userName" })
+        }
+        return res.status(200).send({ user })
+    }
+    catch (err) {
+        return res.status(500).send({ msg: err.message })
+    }
+}
+
+async function getUserFollowers(req, res) {
+    try {
+        const userName = req.params.username
+        if (!isValid(userName)) {
+            return res.status(400).send({ msg: "userName must be in string formate" })
+        }
+        const user = await userModel.findOne({ userName })
+        if (!user) {
+            return res.status(400).send({ msg: "user doesn't exists with the given userName" })
+        }
+        return res.status(200).send({ Followers: user.followers })
+    }
+    catch (err) {
+        return res.status(500).send({ msg: err.message })
+    }
+}
+
+async function getUserFollowing(req, res) {
+    try {
+        const userName = req.params.username
+        if (!isValid(userName)) {
+            return res.status(400).send({ msg: "userName must be in string formate" })
+        }
+        const user = await userModel.findOne({ userName })
+        if (!user) {
+            return res.status(400).send({ msg: "user doesn't exists with the given userName" })
+        }
+        return res.status(200).send({ Following: user.following })
+    }
+    catch (err) {
+        return res.status(500).send({ msg: err.message })
+    }
+}
+
+async function followTheUser(req, res) {
+    try {
+        const userName = req.params.username
+        if (!isValid(userName)) {
+            return res.status(400).send({ msg: "userName must be in string formate" })
+        }
+        const user = await userModel.findOne({ userName })
+        if (!user) {
+            return res.status(400).send({ msg: "user doesn't exists with the given userName" })
+        }
+
+        //finding the user to upadate the following list
+        const userId = req.payload.userId
+        const userData = await userModel.findById({ _id: userId.toString() })
+        const followingList = userData.following
+        followingList[userName] = user._id
+        const updatedUser = await userModel.findByIdAndUpdate({ _id: userId }, { following: followingList }, { new: true })
+
+        //finding the user to upadate the followers list
+        const followersList = user.followers
+        const name = userData.userName
+        followersList[name] = userId
+        await userModel.findOneAndUpdate({ userName }, { followers: followersList })
+        return res.status(201).send({ updatedUser })
+    }
+    catch (err) {
+        return res.status(500).send({ msg: err.message })
+    }
+}
+
+async function unFollowTheUser(req, res) {
+    try {
+        const userName = req.params.username
+        if (!isValid(userName)) {
+            return res.status(400).send({ msg: "userName must be in string formate" })
+        }
+        const user = await userModel.findOne({ userName })
+        if (!user) {
+            return res.status(400).send({ msg: "user doesn't exists with the given userName" })
+        }
+
+        //finding the user to upadate the following list
+        const userId = req.payload.userId
+        const userData = await userModel.findById({ _id: userId })
+        const following = userData.following
+        if (!following.hasOwnProperty(userName)) {
+            return res.status(400).send({ msg: "user doesn't exists with the given userName in the following list" })
+        }
+        delete following[userName]
+        const updatedUser = await userModel.findByIdAndUpdate({ _id: userId }, { following: following }, { new: true })
+
+        //finding the user to upadate the followers list
+        const followersList = user.followers
+        const name = userData.userName
+        delete followersList[name]
+        await userModel.findOneAndUpdate({ userName }, { followers: followersList })
+        return res.status(201).send({ updatedUser })
+    }
+    catch (err) {
+        return res.status(500).send({ msg: err.message })
+    }
+}
+
+module.exports = { createUser, login, getUser, getUserFollowers, getUserFollowing, followTheUser, unFollowTheUser }
